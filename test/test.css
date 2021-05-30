@@ -1,0 +1,22 @@
+html, body {
+    margin: 0;
+    background-color: pink;
+}
+
+#box1{
+    width: 100px;
+    height: 100px;
+    background-image: url('../assets/100.png');
+    background-repeat: no-repeat;
+    background-size: 100% 100%;
+}
+
+#box2{
+    width: 200px;
+    height: 200px;
+    background-image: url('../assets/150.png');
+    background-repeat: no-repeat;
+    background-size: 100% 100%;
+    display: flex;
+    backface-visibility: hidden;
+}
