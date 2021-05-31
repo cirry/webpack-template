@@ -6,9 +6,11 @@ const OptimizeCssAssetsWebpackPlugin = require('optimize-css-assets-webpack-plug
 const CssMinimizerPlugin = require('css-minimizer-webpack-plugin');
 
 // 设置nodejs的环境变量
-process.env.NODE_ENV = "development"
+// process.env.NODE_ENV = "development"
+process.env.NODE_ENV = "production"
 const isProduction = process.env.NODE_ENV === 'production';
 
+// css兼容性配置
 const CommonCSSLoader = [
     {
         loader: "postcss-loader",
@@ -28,24 +30,26 @@ module.exports = {
     mode: "development",
     // 下面这个是开启全部的js兼容性方式，开启的话需删除js中的按需加载
     // entry: ["@babel/polyfill", "./src/index.js"],
+    // 第一个入口是js，第二个是html，这样再修改js和html都可以做到热更新
     entry: ["./src/index.js", "./src/index.html"],
     output: {
-        filename: "js/build.js",
+        filename: "js/[name].[contenthash:10].js",
         // __dirname, nodejs的变量，代表当前文件的目录绝对路径
         path: resolve(__dirname, 'build'),
+        publicPath: "/"
     },
     module: {
         rules: [
             {
                 test: /\.css$/, use: [
-                    isProduction ? MiniCssExtractPlugin.loader:'style-loader',
+                    isProduction ? MiniCssExtractPlugin.loader : 'style-loader',
                     'css-loader',
                     ...CommonCSSLoader,
                 ]
             },
             {
                 test: /\.less$/, use: [
-                    isProduction ? MiniCssExtractPlugin.loader:'style-loader',
+                    isProduction ? MiniCssExtractPlugin.loader : 'style-loader',
                     'css-loader',
                     ...CommonCSSLoader,
                     'less-loader',
@@ -88,7 +92,8 @@ module.exports = {
                                     }
                                 }
                             ]
-                        ]
+                        ],
+                        cacheDirectory: true
                     }
                 }
             },
@@ -101,6 +106,7 @@ module.exports = {
         ],
     },
     plugins: [
+        // 在内存中创建index.html文件，并自动引入js和css文件，html模板为template路径的页面
         new HtmlWebpackPlugin({
             template: "./src/index.html",
             // 压缩html代码
@@ -109,11 +115,12 @@ module.exports = {
                 removeComments: true,
             }
         }),
+        // 提取css代码为单独的文件，默认会被压缩在js文件中
         new MiniCssExtractPlugin({
-            filename: '[name].css',
+            filename: 'css/[name].[contenthash:10].css',
         }),
         //压缩css代码
-        // new OptimizeCssAssetsWebpackPlugin()
+        new OptimizeCssAssetsWebpackPlugin()
     ],
     optimization: {
         minimizer: [
@@ -121,14 +128,35 @@ module.exports = {
             // `...`,
             new CssMinimizerPlugin(),
         ],
+        // 可以将node_modules中的代码单独打包成一个chunk输出
+        splitChunks: {
+            chunks: "all"
+        }
     },
     // 打包在内存中
     devServer: {
         contentBase: resolve(__dirname, 'build'),
         compress: true,
+        host: 'localhost',
         port: 3000,
         open: true,
-        hot: true
+        hot: true,
+        // 没有跨域问题，忽略proxy配置
+        proxy: {
+            // 一旦devServer（3000）服务器接收到/api/xxx的请求，就会把请求转发到另外一个服务器（5000）上
+            '/api': {
+                target: 'http://localhost:5000',
+                // 发送请求时，请求路径重写： 将/api/xxx -->/xxx
+                pathRewrite: {
+                    '^/api': ''
+                }
+            }
+        }
     },
-    target: 'web'
+    target: 'web',
+    devtool: 'source-map',
+    externals: {
+        // 拒绝jquery被打包
+        jquery: 'jQuery',
+    }
 }

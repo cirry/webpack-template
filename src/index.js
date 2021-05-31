@@ -7,9 +7,13 @@ import '../test/tless.less'
 
 import '../iconfont/iconfont.css'
 
+import $ from 'jquery'
+
+console.log($)
+
 const promise = new Promise((resolve, reject) =>{
     setTimeout(() =>{
-        console.log('log 1s hou')
+        console.log('log')
         resolve()
     })
 })
@@ -24,7 +28,5 @@ const add = (x, y) => {
 }
 
 console.log(add(1, 3))
-console.log(data)
 
-console.log('123456')
 

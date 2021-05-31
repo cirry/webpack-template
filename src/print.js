@@ -1,5 +1,5 @@
 function print() {
-    console.log('print41111211111')
+    console.log('1')
 }
 
 module.exports = print
