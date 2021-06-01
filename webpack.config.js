@@ -4,10 +4,11 @@ const MiniCssExtractPlugin = require('mini-css-extract-plugin')
 const OptimizeCssAssetsWebpackPlugin = require('optimize-css-assets-webpack-plugin')
 // optimize-css-assets-webpack-plugin
 const CssMinimizerPlugin = require('css-minimizer-webpack-plugin');
+const TerserPlugin = require('terser-webpack-plugin')
 
 // 设置nodejs的环境变量
 // process.env.NODE_ENV = "development"
-process.env.NODE_ENV = "production"
+// process.env.NODE_ENV = "production"
 const isProduction = process.env.NODE_ENV === 'production';
 
 // css兼容性配置
@@ -35,8 +36,9 @@ module.exports = {
     output: {
         filename: "js/[name].[contenthash:10].js",
         // __dirname, nodejs的变量，代表当前文件的目录绝对路径
-        path: resolve(__dirname, 'build'),
-        publicPath: "/"
+        // path: resolve(__dirname, 'build'),
+        publicPath: "/",
+        chunkFilename: "js/[name].[contenthash:10]_chunk.js"
     },
     module: {
         rules: [
@@ -57,7 +59,7 @@ module.exports = {
             },
             // 仅能处理css中的引入的图片
             {
-                test: /\.(jpg|png|gif)$/, loader: "url-loader", options: {
+                test: /\.(jpg|png|gif|jpe?g)$/, loader: "url-loader", options: {
                     // 小于8kb的图片会被处理为base64
                     limit: 8 * 1024,
                     name: '[name].[hash:10].[ext]',
@@ -83,7 +85,13 @@ module.exports = {
                             ['@babel/preset-env',
                                 {
                                     // 指定兼容性做到哪个版本的浏览器,使用默认，配置方式跟browserList差不多
-                                    targets: "defaults",
+                                    "targets": {
+                                        "ie": 7,
+                                        "edge": "17",
+                                        "firefox": "60",
+                                        "chrome": "67",
+                                        "safari": "11.1",
+                                    },
                                     // 按需加载
                                     useBuiltIns: "usage",
                                     // 指定corejs版本
@@ -98,9 +106,21 @@ module.exports = {
                 }
             },
             {
-                exclude: /\.(css|less|js|html|jpg|png|gif|json)$/, loader: "file-loader", options: {
-                    name: '[name].[hash:10].[ext]',
-                    outputPath: 'media'
+                test: /\.(woff2?|eot|ttf|otf)(\?.*)?$/,
+                loader: 'url-loader',
+                options: {
+                    limit: 1024 * 8,
+                    name: "[name].[hash:10].[ext]",
+                    outputPath: "fonts"
+                }
+            },
+            {
+                test: /\.(mp4|webm|ogg|mp3|wav|flac|aac)(\?.*)?$/,
+                loader: 'url-loader',
+                options: {
+                    limit: 1024 * 8 * 5,
+                    name: "[name].[hash:10].[ext]",
+                    outputPath: "media"
                 }
             },
         ],
@@ -123,19 +143,50 @@ module.exports = {
         new OptimizeCssAssetsWebpackPlugin()
     ],
     optimization: {
+        // 配置生产环境的压缩方案，压缩js和css
         minimizer: [
             // For webpack@5 you can use the `...` syntax to extend existing minimizers (i.e. `terser-webpack-plugin`), uncomment the next line
             // `...`,
             new CssMinimizerPlugin(),
+            new TerserPlugin()
         ],
         // 可以将node_modules中的代码单独打包成一个chunk输出
         splitChunks: {
-            chunks: "all"
-        }
+            chunks: "all",
+            //下面所有的属性都是默认值，不用写
+            // minSize: 30 * 1024, // 小于30kb不分割
+            // maxSize: 0, // 最大没有限制
+            // minChunks: 1, // 要提取的chunks最少被引用1次
+            // maxAsyncRequests: 5, // 按需加载时，并行加载文件的最大数量
+            // maxInitialRequests: 3, //入口js文件，最大并行请求数量
+            // automaticNameDelimiter: "~", // 名称连接符
+            // name: true, // 可以使用命名规则
+            // cacheGroups: { // 分割chunk的组
+            //     // node_modules文件中的文件会被打包到vendors组的chunk中 --> vendors~xxx.ks，连接符号是波浪线是因为前面的automaticNameDelimiter属性
+            //     // 满足上面的公共规则，如大小超过30kb，至少被引用一次
+            //     vendors: {
+            //         test: /[\\/]node_modeuls[\\/]/,
+            //         // 优先级
+            //         priority: -10
+            //     },
+            //     default:{
+            //         // 要提取的chunk最少被引用两次
+            //         minChunks: 2,
+            //         priority: -20,
+            //         // 如果当前要打包的模块，和之前已经被提取的模块是同一个，就会被复用，而不是重新打包模块
+            //         reuseExistingChunk: true
+            //     }
+            // }
+        },
+        // 将当前模块的记录其他模块的hash单独打包为一个文件，叫runtime文件
+        // 解决：修改a文件导致b文件的contenthash变化
+        runtimeChunk: {
+            name: (entrypoint) => `runtime~${entrypoint.name}`,
+        },
     },
-    // 打包在内存中
+    // 打包在内存中, 自动编译,自动打开浏览器,自动刷新
     devServer: {
-        contentBase: resolve(__dirname, 'build'),
+        contentBase: resolve(__dirname, 'dist'), // 运行的目录,不是源代码,而是构建后的目录
         compress: true,
         host: 'localhost',
         port: 3000,
@@ -153,8 +204,11 @@ module.exports = {
             }
         }
     },
+    // 热更新需要属性
     target: 'web',
+    // 开发生产坏境报错需要
     devtool: 'source-map',
+    // 排除jquery不打包
     externals: {
         // 拒绝jquery被打包
         jquery: 'jQuery',
