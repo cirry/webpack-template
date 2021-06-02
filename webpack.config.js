@@ -32,7 +32,7 @@ module.exports = {
     // 下面这个是开启全部的js兼容性方式，开启的话需删除js中的按需加载
     // entry: ["@babel/polyfill", "./src/index.js"],
     // 第一个入口是js，第二个是html，这样再修改js和html都可以做到热更新
-    entry: ["./src/index.js", "./src/index.html"],
+    entry: ["./src/index.js"],
     output: {
         filename: "js/[name].[contenthash:10].js",
         // __dirname, nodejs的变量，代表当前文件的目录绝对路径
