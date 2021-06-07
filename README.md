@@ -1,6 +1,6 @@
 ## 基于webpack5构建的一个简单的js开发环境
 ### 开始
-使用方式：
+使用方式：  
 开发环境： `npm run dev`  
 生产发布： `npm run build`
 

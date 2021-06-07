@@ -18,7 +18,7 @@ const CommonCSSLoader = [
         options: {
             postcssOptions: {
                 ident: 'postcss',
-                //打包后有兼容性样式代码，只处理css文件，不处理less文件
+                //打包后有兼容性样式代码，只处理css文件，不处理less,scss文件
                 plugins: [
                     require('postcss-preset-env')
                 ],
@@ -56,6 +56,18 @@ module.exports = {
                     ...CommonCSSLoader,
                     'less-loader',
                 ]
+            },
+            {
+                test: /\.s[ac]ss$/i,
+                use: [
+                    // 将 JS 字符串生成为 style 节点
+                    isProduction ? MiniCssExtractPlugin.loader : 'style-loader',
+                    // 将 CSS 转化成 CommonJS 模块
+                    "css-loader",
+                    ...CommonCSSLoader,
+                    // 将 Sass 编译成 CSS
+                    "sass-loader",
+                ],
             },
             // 仅能处理css中的引入的图片
             {
